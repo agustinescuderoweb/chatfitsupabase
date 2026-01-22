@@ -9,7 +9,6 @@ export async function POST(req) {
   try {
     const { messages } = await req.json();
 
-    // --- CHAT GPT ---
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -25,9 +24,7 @@ Tu misión es:
 - Preguntar uno por uno
 - Confirmar datos
 - Al finalizar, avisar que un profesional se contactará
-- Siempre generar JSON con los datos, por ejemplo:
-{"nombre":"", "edad":0, "genero":"", "objetivo":"", "nivel":"", "disponibilidad":"", "lugar":"", "whatsapp":"", "email":""}
-- Si solo te saludan, respondé corto.
+- Siempre generar JSON con los datos
           `,
         },
         ...messages,
@@ -36,7 +33,6 @@ Tu misión es:
 
     const reply = completion.choices[0].message.content;
 
-    // --- EXTRACCIÓN JSON ---
     const jsonMatch = reply.match(/{[\s\S]*}/);
 
     if (jsonMatch) {
@@ -61,36 +57,28 @@ Tu misión es:
           )
         );
 
-        // --- INSERT EN SUPABASE ---
-        const { data, error } = await getSupabaseServer 
+        const supabase = getSupabaseServer(); // ✅ ACÁ
+
+        const { error } = await supabase
           .from("leads_fitbot")
-          .insert([filteredInsight])
-          .select();
+          .upsert([filteredInsight], {
+            onConflict: "whatsapp",
+          });
 
         if (error) {
           console.error("Supabase error:", error);
-        } else {
-          console.log("Lead guardado:", data);
         }
-
       } catch (jsonError) {
         console.error("Error parseando JSON:", jsonError);
       }
     }
 
-    return new Response(
-      JSON.stringify({ reply }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return Response.json({ reply });
 
   } catch (error) {
     console.error("Error general:", error);
-
-    return new Response(
-      JSON.stringify({ error: "Error procesando el mensaje" }),
+    return Response.json(
+      { error: "Error procesando el mensaje" },
       { status: 500 }
     );
   }
