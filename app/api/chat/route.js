@@ -1,6 +1,5 @@
 import OpenAI from "openai";
-import { supabase } from "@/lib/supabaseClient";
-
+import { supabaseServer } from "@/lib/supabaseServer";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -23,13 +22,13 @@ Tu misión es:
 - Preguntar qué quiere lograr y para qué
 - Luego pedir permiso para hacer preguntas
 - Obtener: nombre, edad, género, objetivo, nivel, días disponibles, lugar, WhatsApp, email
-- Pregunta uno por uno
+- Preguntar uno por uno
 - Confirmar datos
 - Al finalizar, avisar que un profesional se contactará
 - Siempre generar JSON con los datos, por ejemplo:
 {"nombre":"", "edad":0, "genero":"", "objetivo":"", "nivel":"", "disponibilidad":"", "lugar":"", "whatsapp":"", "email":""}
 - Si solo te saludan, respondé corto.
-        `,
+          `,
         },
         ...messages,
       ],
@@ -38,11 +37,11 @@ Tu misión es:
     const reply = completion.choices[0].message.content;
 
     // --- EXTRACCIÓN JSON ---
-    const insightMatch = reply.match(/{[\s\S]*}/);
+    const jsonMatch = reply.match(/{[\s\S]*}/);
 
-    if (insightMatch) {
+    if (jsonMatch) {
       try {
-        const insight = JSON.parse(insightMatch[0]);
+        const parsed = JSON.parse(jsonMatch[0]);
 
         const allowedKeys = [
           "nombre",
@@ -57,34 +56,39 @@ Tu misión es:
         ];
 
         const filteredInsight = Object.fromEntries(
-          Object.entries(insight).filter(([k]) => allowedKeys.includes(k))
+          Object.entries(parsed).filter(([key]) =>
+            allowedKeys.includes(key)
+          )
         );
 
-       // --------------🔥 INSERT EN SUPABASE --------------
-      const { data, error } = await supabase
+        // --- INSERT EN SUPABASE ---
+        const { data, error } = await supabaseServer
           .from("leads_fitbot")
-          .insert([filteredInsight]);
+          .insert([filteredInsight])
+          .select();
 
         if (error) {
-           console.error("Supabase ERROR:", error);
+          console.error("Supabase error:", error);
         } else {
-           console.log("Datos guardados en Supabase:", data);
+          console.log("Lead guardado:", data);
         }
-        // ------------------------------------------------
 
-
-      } catch (e) {
-        console.error("Error al procesar JSON:", e);
+      } catch (jsonError) {
+        console.error("Error parseando JSON:", jsonError);
       }
     }
 
-    return new Response(JSON.stringify({ reply }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ reply }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
 
   } catch (error) {
     console.error("Error general:", error);
+
     return new Response(
       JSON.stringify({ error: "Error procesando el mensaje" }),
       { status: 500 }
