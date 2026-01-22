@@ -1,12 +1,12 @@
-import { supabaseServer } from "@/lib/supabaseServer";
+import { createClient } from "@supabase/supabase-js";
 
 // ------------------ SUPABASE CLIENT ------------------
 const supabase = createClient(
-  process.env.SUPABASE_UR,
+  process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
 );
 
-// ------------------ GET (Leer datos) ------------------
+// ------------------ GET ------------------
 export async function GET() {
   try {
     const { data, error } = await supabase
@@ -17,7 +17,6 @@ export async function GET() {
     if (error) throw error;
 
     return Response.json({ ok: true, data });
-
   } catch (err) {
     return Response.json(
       { ok: false, error: err.message },
@@ -26,7 +25,7 @@ export async function GET() {
   }
 }
 
-// ------------------ POST (Agregar / Upsert datos) ------------------
+// ------------------ POST ------------------
 export async function POST(req) {
   try {
     const body = await req.json();
@@ -43,7 +42,6 @@ export async function POST(req) {
       email,
     } = body;
 
-    // Validación mínima
     if (!email && !whatsapp) {
       return Response.json(
         { ok: false, error: "Email o WhatsApp requerido" },
@@ -56,29 +54,28 @@ export async function POST(req) {
       .upsert(
         [
           {
-            nombre: nombre || null,
-            edad: edad || null,
-            genero: genero || null,
-            objetivo: objetivo || null,
-            nivel: nivel || null,
-            disponibilidad: disponibilidad || null,
-            lugar: lugar || null,
-            whatsapp: whatsapp || null,
-            email: email || null,
+            nombre: nombre ?? null,
+            edad: edad ?? null,
+            genero: genero ?? null,
+            objetivo: objetivo ?? null,
+            nivel: nivel ?? null,
+            disponibilidad: disponibilidad ?? null,
+            lugar: lugar ?? null,
+            whatsapp: whatsapp ?? null,
+            email: email ?? null,
           },
         ],
         {
-          onConflict: "email",
+          onConflict: "whatsapp", // 🔴 CLAVE IMPORTANTE
         }
       );
 
     if (error) throw error;
 
     return Response.json({ ok: true });
-
-  } catch (error) {
+  } catch (err) {
     return Response.json(
-      { ok: false, error: error.message },
+      { ok: false, error: err.message },
       { status: 500 }
     );
   }
