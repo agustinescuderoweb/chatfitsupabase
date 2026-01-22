@@ -66,7 +66,7 @@ export async function POST(req) {
           },
         ],
         {
-          onConflict: "whatsapp", // 🔴 CLAVE IMPORTANTE
+          onConflict: "whatsapp",
         }
       );
 
