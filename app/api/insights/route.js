@@ -1,14 +1,10 @@
-import { createClient } from "@supabase/supabase-js";
-
-// ------------------ SUPABASE CLIENT ------------------
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
+import { getSupabaseServer } from "@/lib/supabaseServer";
 
 // ------------------ GET ------------------
 export async function GET() {
   try {
+    const supabase = getSupabaseServer();
+
     const { data, error } = await supabase
       .from("leads_fitbot")
       .select("*")
@@ -28,6 +24,7 @@ export async function GET() {
 // ------------------ POST ------------------
 export async function POST(req) {
   try {
+    const supabase = getSupabaseServer();
     const body = await req.json();
 
     const {

@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { supabaseServer } from "@/lib/supabaseServer";
+import { getSupabaseServer } from "@/lib/supabaseServer";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -62,7 +62,7 @@ Tu misión es:
         );
 
         // --- INSERT EN SUPABASE ---
-        const { data, error } = await supabaseServer
+        const { data, error } = await getSupabaseServer 
           .from("leads_fitbot")
           .insert([filteredInsight])
           .select();
